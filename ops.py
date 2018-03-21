@@ -87,7 +87,7 @@ def discriminator_loss(real, fake):
     real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(real), logits=real))
     fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(fake), logits=fake))
 
-    loss = (real_loss + fake_loss) * 0.5
+    loss = (real_loss + fake_loss)
 
     return loss
 
@@ -116,7 +116,7 @@ def discriminator_loss(loss_func, real, fake):
     if loss_func == 'gan' :
         real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(real), logits=real))
         fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(fake), logits=fake))
-        loss = (real_loss + fake_loss) * 0.5
+        loss = (real_loss + fake_loss)
 
     return loss
 
@@ -128,7 +128,7 @@ def generator_loss(loss_func, fake):
         loss = -tf.reduce_mean(fake)
 
     if loss_func == 'lsgan' :
-        loss = tf.reduce_mean(tf.squared_difference(fake, 1.0))
+        loss = tf.reduce_mean(tf.squared_difference(fake, 1.0)) * 0.5
 
     if loss_func == 'gan' :
         loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(fake), logits=fake))
