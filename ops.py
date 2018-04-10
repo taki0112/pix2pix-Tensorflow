@@ -4,7 +4,7 @@ import tensorflow.contrib as tf_contrib
 
 weight_init = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 """
-pad = max(k-s, 0) or max(k - n%s, 0)
+pad = (k-1) // 2
 size = (I-k+1+2p) // s
 """
 def conv(x, channels, kernel=4, stride=2, pad=1,  scope='conv_0'):
@@ -57,11 +57,8 @@ def tanh(x):
     return tf.tanh(x)
 
 
-def batch_norm(x, is_training=False, scope='batch_norm'):
-    return tf_contrib.layers.batch_norm(x,
-                                        decay=0.9, epsilon=1e-05,
-                                        center=True, scale=True, updates_collections=None,
-                                        is_training=is_training, scope=scope)
+def batch_norm(x, is_training=True, scope='batch_norm'):
+    return tf_contrib.layers.batch_norm(x, decay=0.9, epsilon=1e-05, center=True, scale=True, updates_collections=None, is_training=is_training, scope=scope)
 
 
 def instance_norm(x, scope='instance_norm'):
@@ -87,7 +84,7 @@ def discriminator_loss(real, fake):
     real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(real), logits=real))
     fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(fake), logits=fake))
 
-    loss = (real_loss + fake_loss)
+    loss = real_loss + fake_loss
 
     return loss
 
@@ -116,7 +113,7 @@ def discriminator_loss(loss_func, real, fake):
     if loss_func == 'gan' :
         real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(real), logits=real))
         fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(fake), logits=fake))
-        loss = (real_loss + fake_loss)
+        loss = (real_loss + fake_loss) * 0.5
 
     return loss
 
@@ -128,7 +125,7 @@ def generator_loss(loss_func, fake):
         loss = -tf.reduce_mean(fake)
 
     if loss_func == 'lsgan' :
-        loss = tf.reduce_mean(tf.squared_difference(fake, 1.0)) * 0.5
+        loss = tf.reduce_mean(tf.squared_difference(fake, 1.0))
 
     if loss_func == 'gan' :
         loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(fake), logits=fake))

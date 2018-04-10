@@ -14,13 +14,14 @@ def parse_args():
     parser.add_argument('--print_freq', type=int, default=100, help='The number of image_print_freq')
 
     parser.add_argument('--lr', type=float, default=0.0002, help='The learning rate')
-    parser.add_argument('--L1_weight', type=float, default=100.0, help='The L1 lambda')
+    parser.add_argument('--L1_weight', type=float, default=10.0, help='The L1 lambda')
 
 
     parser.add_argument('--ch', type=int, default=64, help='base channel number per layer')
+    parser.add_argument('--repeat', type=int, default=9, help='img size : 256 -> 9, 128 -> 6')
 
     parser.add_argument('--img_size', type=int, default=256, help='The size of image')
-    parser.add_argument('--img_ch', type=int, default=3, help='The size of image channel')
+    parser.add_argument('--gray_to_RGB', type=bool, default=False, help='Gray -> RGB')
 
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoint',
                         help='Directory name to save the checkpoints')

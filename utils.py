@@ -5,18 +5,29 @@ import os, random
 import numpy as np
 from glob import glob
 
-def prepare_data(dataset_name, size):
+def prepare_data(dataset_name, size, gray_to_RGB=False):
     input_list = sorted(glob('./dataset/{}/*.*'.format(dataset_name + '/trainA')))
     target_list = sorted(glob('./dataset/{}/*.*'.format(dataset_name + '/trainB')))
 
     trainA = []
     trainB = []
 
-    for image in input_list :
-        trainA.append(misc.imresize(misc.imread(image, mode='RGB'), [size, size]))
+    if gray_to_RGB :
+        for image in input_list:
+            trainA.append(np.expand_dims(misc.imresize(misc.imread(image, mode='L'), [size, size]), axis=-1))
 
-    for image in target_list :
-        trainB.append(misc.imresize(misc.imread(image, mode='RGB'), [size, size]))
+        for image in input_list:
+            trainB.append(misc.imresize(misc.imread(image, mode='RGB'), [size, size]))
+
+        # trainA = np.repeat(trainA, repeats=3, axis=-1)
+        # trainA = np.array(trainA).astype(np.float32)[:, :, :, None]
+
+    else :
+        for image in input_list :
+            trainA.append(misc.imresize(misc.imread(image, mode='RGB'), [size, size]))
+
+        for image in target_list :
+            trainB.append(misc.imresize(misc.imread(image, mode='RGB'), [size, size]))
 
 
     trainA = preprocessing(np.asarray(trainA))

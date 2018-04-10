@@ -18,15 +18,23 @@ class pix2pix(object):
         self.print_freq = args.print_freq
 
         self.ch = args.ch
+        self.repeat = args.repeat
 
         """ Weight """
         self.L1_weight = args.L1_weight
         self.lr = args.lr
 
         self.img_size = args.img_size
-        self.channel = args.img_ch
+        self.gray_to_RGB = args.gray_to_RGB
 
-        self.trainA, self.trainB = prepare_data(dataset_name=self.dataset_name, size=self.img_size)
+        if self.gray_to_RGB :
+            self.input_ch = 1
+            self.output_ch = 3
+        else :
+            self.input_ch = 3
+            self.output_ch = 3
+
+        self.trainA, self.trainB = prepare_data(dataset_name=self.dataset_name, size=self.img_size, gray_to_RGB=self.gray_to_RGB)
         self.num_batches = max(len(self.trainA), len(self.trainB)) // self.batch_size
 
         self.sample_dir = os.path.join(args.sample_dir, self.model_dir)
@@ -47,7 +55,7 @@ class pix2pix(object):
                 channel = channel * 2
 
             # Bottle-neck
-            for i in range(6) :
+            for i in range(self.repeat) :
                 x = resblock(x, channel, scope='resblock_'+str(i))
 
             # Decoder
@@ -85,33 +93,37 @@ class pix2pix(object):
 
 
     def build_model(self):
-        """ Input Image"""
-        self.real_A = tf.placeholder(tf.float32, [self.batch_size, self.img_size, self.img_size, self.channel], name='real_A') # real A
-        self.real_B = tf.placeholder(tf.float32, [self.batch_size, self.img_size, self.img_size, self.channel], name='real_B') # real B
 
-        """ Logit """
-        self.fake_B = self.generator(self.real_A)
-        real_logit = self.discriminator(tf.concat([self.real_A, self.real_B], axis=-1), reuse=False)
-        fake_logit = self.discriminator(tf.concat([self.real_A, self.fake_B], axis=-1), reuse=True)
+        """ Graph Image"""
+        self.real_A = tf.placeholder(tf.float32, [self.batch_size, self.img_size, self.img_size, self.input_ch], name='real_A') # gray
+
+        self.real_B = tf.placeholder(tf.float32, [self.batch_size, self.img_size, self.img_size, self.output_ch], name='real_B') # rgb
+
 
         """ Loss Function """
-        self.D_loss = discriminator_loss(real=real_logit, fake=fake_logit)
-        self.G_loss = generator_loss(fake=fake_logit) + self.L1_weight * L1_loss(self.real_B, self.fake_B)
+        D_real_logit = self.discriminator(self.real_B, reuse=False)
+
+        self.fake_B = self.generator(self.real_A)
+        D_fake_logit = self.discriminator(self.fake_B, reuse=True)
+
+        self.d_loss = discriminator_loss(real=D_real_logit, fake=D_fake_logit)
+
+        self.g_loss = generator_loss(fake=D_fake_logit) + self.L1_weight * L1_loss(self.real_B, self.fake_B)
 
         """ Training """
         t_vars = tf.trainable_variables()
         G_vars = [var for var in t_vars if 'generator' in var.name]
         D_vars = [var for var in t_vars if 'discriminator' in var.name]
 
-        self.G_optim = tf.train.AdamOptimizer(self.lr, beta1=0.5, beta2=0.999).minimize(self.G_loss, var_list=G_vars)
-        self.D_optim = tf.train.AdamOptimizer(self.lr, beta1=0.5, beta2=0.999).minimize(self.D_loss, var_list=D_vars)
+        self.G_optim = tf.train.AdamOptimizer(self.lr, beta1=0.5, beta2=0.999).minimize(self.g_loss, var_list=G_vars)
+        self.D_optim = tf.train.AdamOptimizer(self.lr, beta1=0.5, beta2=0.999).minimize(self.d_loss, var_list=D_vars)
 
         """" Summary """
-        self.G_loss_summary = tf.summary.scalar("Generator_loss", self.G_loss)
-        self.D_loss_summary = tf.summary.scalar("Discriminator_loss", self.D_loss)
+        self.G_loss_summary = tf.summary.scalar("Generator_loss", self.g_loss)
+        self.D_loss_summary = tf.summary.scalar("Discriminator_loss", self.d_loss)
 
         """ Test """
-        self.test_real_A = tf.placeholder(tf.float32, [1, self.img_size, self.img_size, self.channel], name='test_real_A')
+        self.test_real_A = tf.placeholder(tf.float32, [1, self.img_size, self.img_size, self.input_ch], name='test_real_A')
         self.sample = self.generator(self.test_real_A, is_training=False, reuse=True)
 
 
@@ -154,12 +166,12 @@ class pix2pix(object):
                 }
 
                 # Update D
-                _, d_loss, summary_str = self.sess.run([self.D_optim, self.D_loss, self.D_loss_summary],
+                _, d_loss, summary_str = self.sess.run([self.D_optim, self.d_loss, self.D_loss_summary],
                                                        feed_dict=train_feed_dict)
                 self.writer.add_summary(summary_str, counter)
 
                 # Update G
-                fake_B, _, g_loss, summary_str = self.sess.run([self.fake_B, self.G_optim, self.G_loss, self.G_loss_summary],
+                fake_B, _, g_loss, summary_str = self.sess.run([self.fake_B, self.G_optim, self.g_loss, self.G_loss_summary],
                                                                feed_dict=train_feed_dict)
                 self.writer.add_summary(summary_str, counter)
 
