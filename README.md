@@ -25,7 +25,7 @@ SImple Tensorflow implementations of " Image-to-Image Translation with Condition
 ```
 
 ```bash
-> python main.py
+> python main.py --dataset cat --gray_to_RGB True
 ```
 
 
