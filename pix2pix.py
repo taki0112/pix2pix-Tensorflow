@@ -194,7 +194,7 @@ class pix2pix(object):
                 start_batch_id = 0
 
                 # save model
-                self.save(self.checkpoint_dir, counter)
+                # self.save(self.checkpoint_dir, counter)
 
                 # save model for final step
             self.save(self.checkpoint_dir, counter)
@@ -248,7 +248,7 @@ class pix2pix(object):
 
         for sample_file  in test_A_files : # A -> B
             print('Processing A image: ' + sample_file)
-            sample_image = np.asarray(load_test_data(sample_file))
+            sample_image = np.asarray(load_test_data(sample_file, size=self.img_size, gray_to_RGB=self.gray_to_RGB))
             image_path = os.path.join(self.result_dir,'{0}'.format(os.path.basename(sample_file)))
 
             fake_img = self.sess.run(self.sample, feed_dict = {self.test_real_A : sample_image})

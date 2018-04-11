@@ -45,13 +45,19 @@ def shuffle(x, y) :
 
     return x, y
 
-def load_test_data(image_path, size=256):
-    img = misc.imread(image_path, mode='RGB')
-    img = misc.imresize(img, [size, size])
+def load_test_data(image_path, size=256, gray_to_RGB=False):
+    if gray_to_RGB :
+        img = misc.imread(image_path, mode='L')
+        img = misc.imresize(img, [size, size])
+        img = np.expand_dims(img, axis=-1)
+    else :
+        img = misc.imread(image_path, mode='RGB')
+        img = misc.imresize(img, [size, size])
     img = np.expand_dims(img, axis=0)
     img = preprocessing(img)
 
     return img
+
 
 def preprocessing(x):
 
